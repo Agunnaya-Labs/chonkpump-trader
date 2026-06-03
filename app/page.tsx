@@ -1,11 +1,45 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { TrendingUp, Users, Wallet, Zap, Share2, ArrowRight, Check, Smartphone } from 'lucide-react'
 
+interface BotStats {
+  totalUsers: number
+  connectedUsers: number
+  connectionRate: string
+  totalTrades: number
+  successfulTrades: number
+  successRate: string
+  totalBalance: string
+  timestamp: string
+}
+
 export default function Page() {
   const [scrolled, setScrolled] = useState(false)
+  const [stats, setStats] = useState<BotStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setStats(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchStats, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -70,20 +104,38 @@ export default function Page() {
             </a>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 pt-8 text-center">
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-primary">7</p>
-              <p className="text-sm text-muted-foreground">Core Features</p>
+          {stats && !loading && (
+            <div className="grid grid-cols-3 gap-4 pt-8 text-center">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-primary">{stats.totalUsers}</p>
+                <p className="text-sm text-muted-foreground">Active Users</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-primary">{stats.totalTrades}</p>
+                <p className="text-sm text-muted-foreground">Total Trades</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-primary">{stats.successRate}%</p>
+                <p className="text-sm text-muted-foreground">Success Rate</p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-primary">2</p>
-              <p className="text-sm text-muted-foreground">Wallet Modes</p>
+          )}
+          {loading && (
+            <div className="grid grid-cols-3 gap-4 pt-8 text-center">
+              <div className="space-y-1 animate-pulse">
+                <p className="text-2xl font-bold text-primary/30">-</p>
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
+              <div className="space-y-1 animate-pulse">
+                <p className="text-2xl font-bold text-primary/30">-</p>
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
+              <div className="space-y-1 animate-pulse">
+                <p className="text-2xl font-bold text-primary/30">-</p>
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-primary">1</p>
-              <p className="text-sm text-muted-foreground">Network</p>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 

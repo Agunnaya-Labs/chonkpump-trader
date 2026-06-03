@@ -3,6 +3,14 @@ import { getUserByTelegramId, updateBalance } from '@/lib/db';
 import { getBalance, getFormattedBalance } from '@/lib/blockchain';
 import { getBalanceMenuKeyboard } from '@/bot/utils';
 import { formatBalance, truncateAddress } from '@/bot/utils';
+import {
+  validateWalletConnection,
+  formatErrorForTelegram,
+  logBotError,
+  BotError,
+  createBotError,
+  BotErrorType,
+} from '@/bot/error-handler';
 
 export async function handleBalance(chatId: number, userId: number) {
   try {
@@ -48,10 +56,14 @@ Use the 🔗 *Connect Wallet* button to get started.
 
     await sendMessageWithKeyboard(chatId, text.trim(), getBalanceMenuKeyboard());
   } catch (error) {
-    console.error('[v0] Error in balance handler:', error);
+    const botError = error instanceof BotError
+      ? error
+      : createBotError(BotErrorType.BALANCE_FETCH_FAILED, error);
+    logBotError(botError, { userId, action: 'balance_fetch' });
+    
     await sendMessageWithKeyboard(
       chatId,
-      '❌ Error fetching balance. Please try again.',
+      formatErrorForTelegram(botError),
       [
         [{ text: '🔄 Retry', callback_data: 'balance' }],
         [{ text: '← Back', callback_data: 'menu' }],
